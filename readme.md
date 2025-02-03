@@ -86,10 +86,11 @@ git clone https://github.com/NIH-NCPI/locutus.git locutus
   ```
 - **Nginx Configuration**:
   Ensure `nginx.conf` exists in the project root with a valid configuration. Example:
-  ```events {
+```
+events {
     worker_connections 512; # Adjust as needed
 }
-```
+
 http {
     server {
         listen 80;
