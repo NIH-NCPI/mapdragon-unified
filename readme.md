@@ -86,24 +86,34 @@ git clone https://github.com/NIH-NCPI/locutus.git locutus
   ```
 - **Nginx Configuration**:
   Ensure `nginx.conf` exists in the project root with a valid configuration. Example:
-  ```nginx
-  events {
-      worker_connections 1024;
-  }
+  ```events {
+    worker_connections 512; # Adjust as needed
+}
 
-  http {
-      server {
-          listen 80;
+http {
+    server {
+        listen 80;
 
-          location / {
-              proxy_pass http://mapdragon:5173;
-          }
+        # Route to mapdragon
+        location / {
+            proxy_pass http://mapdragon:5173;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
 
-          location /api/ {
-              proxy_pass http://locutus:80;
-          }
-      }
-  }
+        # Route to locutus API
+        location /api/ {
+            proxy_pass http://locutus:80;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+}
+
   ```
 
 ### 3. Build and Start the Services
