@@ -76,7 +76,7 @@ git clone https://github.com/NIH-NCPI/locutus.git locutus
 - **Using Dockerfile.mac**
    If you are using a MacBook with an ARM-based chip, ensure you are using the Dockerfile.mac located in the locutus directory. This Dockerfile is specifically tailored to build and run the Locutus service on ARM-based hardware.
 - **Google Cloud Credentials**:
-  Place your GOOGLE_APPLICATION_CREDENTIALS file (`mapdragon-unified-creds.json`) in the project root.
+  Place your GOOGLE_APPLICATION_CREDENTIALS file (`mapdragon-unified-creds.json`) in the project root (contact Morgan to get this file).
 - **Environment File**:
   Create a `loc.env` file in the root directory with necessary environment variables. Example:
   ```env
