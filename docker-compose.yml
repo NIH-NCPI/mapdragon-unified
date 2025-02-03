@@ -1,0 +1,51 @@
+version: '3.9'
+
+services:
+  mapdragon:
+    build:
+      context: ./map-dragon
+      dockerfile: Dockerfile
+      args:
+        ENV: loc
+    networks:
+      - shared_network
+    container_name: mapdragon_app
+    ports:
+      - "5173:5173"
+    depends_on:
+      - locutus
+
+  locutus:
+    build:
+      context: ./locutus
+      dockerfile: Dockerfile.mac
+    container_name: locutus_api
+    networks:
+      - shared_network
+    ports:
+      - "80:80"
+    environment:
+      - FLASK_ENV=local
+      - FLASK_RUN_PORT=80
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/mapdragon-unified-creds.json
+    volumes:
+      - ./mapdragon-unified-creds.json:/app/mapdragon-unified-creds.json
+    env_file:
+      - ./loc.env
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx_proxy
+    depends_on:
+      - mapdragon
+      - locutus
+    ports:
+      - "8080:80" # Expose the proxy on port 8080
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    networks:
+      - shared_network
+
+networks:
+  shared_network:
+    driver: bridge
