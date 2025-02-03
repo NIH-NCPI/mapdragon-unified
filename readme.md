@@ -89,7 +89,7 @@ git clone https://github.com/NIH-NCPI/locutus.git locutus
   ```events {
     worker_connections 512; # Adjust as needed
 }
-
+```
 http {
     server {
         listen 80;
