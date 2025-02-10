@@ -36,7 +36,8 @@ Before starting, ensure you have the following installed:
 - **Volumes**:
   - Mounts `mapdragon-unified-creds.json` into the container at `/app/mapdragon-unified-creds.json`.
   - Uses environment variables from `loc.env`.
-
+- **IF using Macbook with an ARM-mased chip**
+  - Move Dockerfile.mac inside of the lacutus directory
 ### 3. **Nginx** (Reverse Proxy)
 
 - **Image**: Uses the latest official Nginx image.
