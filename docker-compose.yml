@@ -14,6 +14,7 @@ services:
       - "5173:5173"
     depends_on:
       - locutus
+      - mongo  # Add dependency on MongoDB
 
   locutus:
     build:
@@ -27,11 +28,25 @@ services:
     environment:
       - FLASK_ENV=local
       - FLASK_RUN_PORT=80
-      - GOOGLE_APPLICATION_CREDENTIALS=/app/mapdragon-unified-creds.json
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}
+      - MONGO_URI=mongodb://${DB_NAME}:${DB_PASSWORD}@mongo:27017  # Add MongoDB connection string
     volumes:
-      - ./mapdragon-unified-creds.json:/app/mapdragon-unified-creds.json
-    env_file:
-      - ./loc.env
+      - ${GOOGLE_APPLICATION_CREDENTIALS}:/app/mapdragon-unified-creds.json
+    depends_on:
+      - mongo  # Add dependency on MongoDB
+
+  mongo:
+    image: mongo:latest
+    container_name: mongo_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${DB_NAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${DB_PASSWORD}
+    networks:
+      - shared_network
 
   nginx:
     image: nginx:latest
@@ -49,3 +64,6 @@ services:
 networks:
   shared_network:
     driver: bridge
+
+volumes:
+  mongo-data:
