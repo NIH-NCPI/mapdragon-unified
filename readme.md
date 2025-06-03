@@ -92,13 +92,19 @@ git clone https://github.com/NIH-NCPI/locutus.git locutus
   Create a `.env` file in the root directory with necessary environment variables. Example:
   ```env
   REGION="us-central1"
-  PROJECT_ID="mapdragon-unified"
   SERVICE="mapdragon-unified"
-  DB_TYPE=mongodb
+  PROJECT_ID="mapdragon-unified"
+  DB_NAME=admin
+  DB_PASSWORD=password
+  MONGO_URI=mongodb://${DB_NAME}:${DB_PASSWORD}@mongo:27017
   GOOGLE_APPLICATION_CREDENTIALS=./mapdragon-unified-creds.json
-  MONGO_URI=mongodb://admin:password@mongo:27017
-  FIRESTORE_MONGO_URI=mongodb://username:password@mapdragon-unified.us-central1.firestore.goog:443/mapdragon-unified%23loc-mongo?tls=true&retryWrites=false&loadBalanced=true&authMechanism=SCRAM-SHA-256&authMechanismProperties=ENVIRONMENT:gcp,TOKEN_RESOURCE:FIRESTORE
+  DB_TYPE=mongodb
+  FIRESTORE_DB_USERNAME=locutus
+  FIRESTORE_DB_PASSWORD=your-firestore-password-here
+  FIRESTORE_MONGO_URI=mongodb://${FIRESTORE_DB_USERNAME}:${FIRESTORE_DB_PASSWORD}.us-central1.firestore.goog:443/loc-mongo?tls=true&retryWrites=false&loadBalanced=true&authMechanism=SCRAM-SHA-256&authMechanismProperties=ENVIRONMENT:gcp,TOKEN_RESOURCE:FIRESTORE
   ```
+  
+  **Note**: Replace `your-firestore-password-here` with the actual password from your Firestore MongoDB "Users" tab. The database name in the URI (`loc-mongo`) should match your Firestore MongoDB-compatible Database ID exactly.
 - **Nginx Configuration**:
   Ensure `nginx.conf` exists in the project root with a valid configuration. Example:
   ```nginx
