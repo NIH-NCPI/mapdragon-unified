@@ -10,7 +10,12 @@ This project uses Docker Compose to set up a multi-service application consistin
 
 ## Database Configuration
 
-This project uses **Google Cloud Firestore with MongoDB compatibility** instead of a local MongoDB instance. The Flask backend connects to Firestore using the MongoDB wire protocol via PyMongo.
+This project supports two database configurations:
+
+1. **Google Cloud Firestore with MongoDB compatibility** (Recommended for production)
+2. **Local MongoDB** (For local development)
+
+The Flask backend automatically detects which database to use based on the `DB_TYPE` environment variable and connects accordingly via PyMongo.
 
 ## Prerequisites
 
@@ -31,19 +36,18 @@ Before starting, ensure you have the following installed:
 ### 2. **Locutus** (Backend)
 
 - **Build Context**: `./locutus`
-- **Dockerfile**: `Dockerfile.mac` (Used if you are using a MacBook with an ARM-based chip.)
-- **Ports**: Exposes port `80` on both the host and the container.
+- **Dockerfile**: `Dockerfile.mac` (for ARM-based MacBooks) or `Dockerfile` (for x86)
+- **Ports**: Exposes port `80` on both the host and the container
 - **Environment Variables**:
-  - `FLASK_ENV=local`: Runs Flask in local development mode.
-  - `FLASK_RUN_PORT=80`: Configures Flask to run on port 80.
-  - `GOOGLE_APPLICATION_CREDENTIALS`: Path to Google Cloud credentials.
-  - `FIRESTORE_MONGO_URI`: MongoDB-compatible connection string for Firestore.
+  - `FLASK_ENV=local`: Runs Flask in local development mode
+  - `FLASK_RUN_PORT=80`: Configures Flask to run on port 80
+  - `DB_TYPE=mongodb`: Configures the backend to use MongoDB/Firestore-compat mode
+  - `GOOGLE_APPLICATION_CREDENTIALS`: Path to Google Cloud credentials (optional for Firestore-compat)
+  - `FIRESTORE_MONGO_URI`: MongoDB-compatible connection string for Firestore
 - **Volumes**:
-  - Mounts `mapdragon-unified-creds.json` into the container at `/app/mapdragon-unified-creds.json`.
-  - Uses environment variables from `.env`.
-- **Database**: Connects to Google Cloud Firestore using MongoDB wire protocol compatibility.
-- **IF using Macbook with an ARM-based chip**
-  - Move Dockerfile.mac inside of the locutus directory
+  - Mounts `mapdragon-unified-creds.json` into the container (if using GCP credentials)
+  - Uses environment variables from `.env`
+- **Database**: Connects to either local MongoDB or Google Cloud Firestore using MongoDB wire protocol compatibility
 ### 3. **Nginx** (Reverse Proxy)
 
 - **Image**: Uses the latest official Nginx image.
@@ -87,8 +91,8 @@ git clone https://github.com/NIH-NCPI/locutus.git locutus
 - **Environment File**:
   Create a `.env` file in the root directory with necessary environment variables. Example:
   ```env
-  REGION = "us-central1"
-  SERVICE = "mapdragon-unified"
+  REGION="us-central1"
+  SERVICE="mapdragon-unified"
   PROJECT_ID="mapdragon-unified"
   DB_NAME=admin
   DB_PASSWORD=password
@@ -99,35 +103,34 @@ git clone https://github.com/NIH-NCPI/locutus.git locutus
   ```
 - **Nginx Configuration**:
   Ensure `nginx.conf` exists in the project root with a valid configuration. Example:
-```
-events {
-    worker_connections 512; # Adjust as needed
-}
+  ```nginx
+  events {
+      worker_connections 512; # Adjust as needed
+  }
 
-http {
-    server {
-        listen 80;
+  http {
+      server {
+          listen 80;
 
-        # Route to mapdragon
-        location / {
-            proxy_pass http://mapdragon:5173;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-        }
+          # Route to mapdragon
+          location / {
+              proxy_pass http://mapdragon:5173;
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+          }
 
-        # Route to locutus API
-        location /api/ {
-            proxy_pass http://locutus:80;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-        }
-    }
-}
-
+          # Route to locutus API
+          location /api/ {
+              proxy_pass http://locutus:80;
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+          }
+      }
+  }
   ```
 
 ### 3. Build and Start the Services
@@ -163,6 +166,7 @@ This project uses Google Cloud Firestore's MongoDB-compatible mode instead of a 
   ```
 - **Database Name**: Must exactly match your Firestore MongoDB-compatible Database ID (e.g., `mapdragon-unified#loc-mongo`). Use URL encoding for special characters (`#` becomes `%23`).
 - **Authentication**: Username and password come from the Firestore MongoDB "Users" tab in Google Cloud Console.
+- **Environment Variable**: The backend automatically uses `FIRESTORE_MONGO_URI` when `DB_TYPE=mongodb`, falling back to `MONGO_URI` for local development.
 
 ### Supported Operations
 
@@ -201,6 +205,13 @@ This project uses Google Cloud Firestore's MongoDB-compatible mode instead of a 
   - Some MongoDB operators like `$addToSet` are not supported
   - Use read-modify-write patterns as workarounds
   - Consult Firestore MongoDB compatibility documentation for supported operations
+
+### Recent Fixes
+
+- **Database Name Parsing**: The backend now automatically parses the database name from the `FIRESTORE_MONGO_URI` path, ensuring exact matching with Firestore MongoDB-compatible Database IDs
+- **PyMongo Compatibility**: Replaced Firestore-native methods (`.to_dict()`, `.stream()`) with PyMongo equivalents in the Study API  
+- **Operator Workarounds**: Implemented workarounds for unsupported MongoDB operators like `$addToSet` using read-modify-write patterns
+- **Environment Variable Priority**: The backend now prioritizes `FIRESTORE_MONGO_URI` over `MONGO_URI` when `DB_TYPE=mongodb`
 
 
 
