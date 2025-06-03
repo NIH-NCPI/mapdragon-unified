@@ -5,8 +5,12 @@
 This project uses Docker Compose to set up a multi-service application consisting of:
 
 1. **Map-Dragon** - A frontend service built with React.
-2. **Locutus** - A backend service built with Flask.
+2. **Locutus** - A backend service built with Flask using Google Cloud Firestore with MongoDB compatibility.
 3. **Nginx** - A reverse proxy to route requests between the frontend and backend.
+
+## Database Configuration
+
+This project uses **Google Cloud Firestore with MongoDB compatibility** instead of a local MongoDB instance. The Flask backend connects to Firestore using the MongoDB wire protocol via PyMongo.
 
 ## Prerequisites
 
@@ -33,11 +37,13 @@ Before starting, ensure you have the following installed:
   - `FLASK_ENV=local`: Runs Flask in local development mode.
   - `FLASK_RUN_PORT=80`: Configures Flask to run on port 80.
   - `GOOGLE_APPLICATION_CREDENTIALS`: Path to Google Cloud credentials.
+  - `FIRESTORE_MONGO_URI`: MongoDB-compatible connection string for Firestore.
 - **Volumes**:
   - Mounts `mapdragon-unified-creds.json` into the container at `/app/mapdragon-unified-creds.json`.
-  - Uses environment variables from `loc.env`.
-- **IF using Macbook with an ARM-mased chip**
-  - Move Dockerfile.mac inside of the lacutus directory
+  - Uses environment variables from `.env`.
+- **Database**: Connects to Google Cloud Firestore using MongoDB wire protocol compatibility.
+- **IF using Macbook with an ARM-based chip**
+  - Move Dockerfile.mac inside of the locutus directory
 ### 3. **Nginx** (Reverse Proxy)
 
 - **Image**: Uses the latest official Nginx image.
@@ -79,11 +85,17 @@ git clone https://github.com/NIH-NCPI/locutus.git locutus
 - **Google Cloud Credentials**:
   Place your GOOGLE_APPLICATION_CREDENTIALS file (`mapdragon-unified-creds.json`) in the project root (contact Morgan to get this file).
 - **Environment File**:
-  Create a `loc.env` file in the root directory with necessary environment variables. Example:
+  Create a `.env` file in the root directory with necessary environment variables. Example:
   ```env
   REGION = "us-central1"
   SERVICE = "mapdragon-unified"
   PROJECT_ID="mapdragon-unified"
+  DB_NAME=admin
+  DB_PASSWORD=password
+  GOOGLE_APPLICATION_CREDENTIALS=./mapdragon-unified-creds.json
+  MONGO_URI=mongodb://admin:password@mongo:27017
+  DB_TYPE=mongodb
+  FIRESTORE_MONGO_URI=mongodb://username:password@project-id.region.firestore.goog:443/database-name?tls=true&retryWrites=false&loadBalanced=true&authMechanism=SCRAM-SHA-256&authMechanismProperties=ENVIRONMENT:gcp,TOKEN_RESOURCE:FIRESTORE
   ```
 - **Nginx Configuration**:
   Ensure `nginx.conf` exists in the project root with a valid configuration. Example:
@@ -139,13 +151,56 @@ To stop and remove the containers, networks, and volumes:
 docker-compose down --volumes
 ```
 
+## Firestore MongoDB Compatibility
+
+This project uses Google Cloud Firestore's MongoDB-compatible mode instead of a traditional MongoDB instance. Key details:
+
+### Connection Requirements
+
+- **URI Format**: The `FIRESTORE_MONGO_URI` must include specific parameters:
+  ```
+  mongodb://username:password@project-id.region.firestore.goog:443/database-name?tls=true&retryWrites=false&loadBalanced=true&authMechanism=SCRAM-SHA-256&authMechanismProperties=ENVIRONMENT:gcp,TOKEN_RESOURCE:FIRESTORE
+  ```
+- **Database Name**: Must exactly match your Firestore MongoDB-compatible Database ID (e.g., `mapdragon-unified#loc-mongo`). Use URL encoding for special characters (`#` becomes `%23`).
+- **Authentication**: Username and password come from the Firestore MongoDB "Users" tab in Google Cloud Console.
+
+### Supported Operations
+
+- Basic CRUD operations via PyMongo
+- Most standard MongoDB queries
+- **Note**: Some MongoDB operators like `$addToSet` are not supported and require workarounds
+
+### Migration Notes
+
+- Firestore native import/export commands do not work with MongoDB-compatible databases
+- To migrate data from native Firestore to MongoDB-compat, use a custom Python script that reads from `google-cloud-firestore` and writes via `pymongo`
+
 ## Troubleshooting
+
+### General Issues
 
 - **Caching Issues During Builds**:
   If you encounter unexpected behavior or changes not being applied, rebuild the services without using the cache:
   ```bash
   docker-compose build --no-cache
   ```
+
+### Firestore MongoDB Compatibility Issues
+
+- **"Invalid database" Error**:
+  - Ensure the database name in your URI exactly matches your Firestore MongoDB-compatible Database ID
+  - Check for proper URL encoding of special characters (e.g., `#` should be `%23`)
+  
+- **"ServerSelectionTimeoutError"**:
+  - Verify Docker container has root certificates (`ca-certificates`)
+  - Confirm outbound network access to `*.firestore.goog:443`
+  - Ensure TLS is enabled in the URI
+  - Check username/password credentials
+
+- **"Operator not supported" Errors**:
+  - Some MongoDB operators like `$addToSet` are not supported
+  - Use read-modify-write patterns as workarounds
+  - Consult Firestore MongoDB compatibility documentation for supported operations
 
 
 
