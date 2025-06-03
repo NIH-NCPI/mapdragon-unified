@@ -99,8 +99,8 @@ git clone https://github.com/NIH-NCPI/locutus.git locutus
   MONGO_URI=mongodb://${DB_NAME}:${DB_PASSWORD}@mongo:27017
   GOOGLE_APPLICATION_CREDENTIALS=./mapdragon-unified-creds.json
   DB_TYPE=mongodb
-  FIRESTORE_DB_USERNAME=locutus
-  FIRESTORE_DB_PASSWORD=your-firestore-password-here
+  FIRESTORE_DB_USERNAME=your-firestore-db-username-here
+  FIRESTORE_DB_PASSWORD=your-firestore-db-password-here
   FIRESTORE_MONGO_URI=mongodb://${FIRESTORE_DB_USERNAME}:${FIRESTORE_DB_PASSWORD}.us-central1.firestore.goog:443/loc-mongo?tls=true&retryWrites=false&loadBalanced=true&authMechanism=SCRAM-SHA-256&authMechanismProperties=ENVIRONMENT:gcp,TOKEN_RESOURCE:FIRESTORE
   ```
   
