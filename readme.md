@@ -92,14 +92,12 @@ git clone https://github.com/NIH-NCPI/locutus.git locutus
   Create a `.env` file in the root directory with necessary environment variables. Example:
   ```env
   REGION="us-central1"
-  SERVICE="mapdragon-unified"
   PROJECT_ID="mapdragon-unified"
-  DB_NAME=admin
-  DB_PASSWORD=password
+  SERVICE="mapdragon-unified"
+  DB_TYPE=mongodb
   GOOGLE_APPLICATION_CREDENTIALS=./mapdragon-unified-creds.json
   MONGO_URI=mongodb://admin:password@mongo:27017
-  DB_TYPE=mongodb
-  FIRESTORE_MONGO_URI=mongodb://username:password@project-id.region.firestore.goog:443/database-name?tls=true&retryWrites=false&loadBalanced=true&authMechanism=SCRAM-SHA-256&authMechanismProperties=ENVIRONMENT:gcp,TOKEN_RESOURCE:FIRESTORE
+  FIRESTORE_MONGO_URI=mongodb://username:password@mapdragon-unified.us-central1.firestore.goog:443/mapdragon-unified%23loc-mongo?tls=true&retryWrites=false&loadBalanced=true&authMechanism=SCRAM-SHA-256&authMechanismProperties=ENVIRONMENT:gcp,TOKEN_RESOURCE:FIRESTORE
   ```
 - **Nginx Configuration**:
   Ensure `nginx.conf` exists in the project root with a valid configuration. Example:
