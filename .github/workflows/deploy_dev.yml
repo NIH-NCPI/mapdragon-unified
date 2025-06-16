@@ -1,0 +1,63 @@
+name: Deploy Docker Compose
+
+on:
+  push:
+    branches: [ "main" ]
+env:
+
+  PROJECT_ID: ${{ secrets.PROJECT_ID }}
+  REGION: ${{ secrets.REGION_LOC_1 }}
+  SERVICE: ${{ secrets.SERVICE }}
+  IMAGE_NAME: 'mapdragonUnified_img'
+  GCP_CREDENTIALS:  ${{ secrets.GCP_CREDENTIALS }}
+
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+     # If PR is approved and the PR is for the 'main' branch
+    environment:
+      name: dev
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Copy files to server
+      uses: appleboy/scp-action@v0.1.4
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        source: "."
+        target: "/path/to/deploy"
+        rm: true
+
+    - name: Deploy using Docker Compose
+      uses: appleboy/ssh-action@v0.1.10
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd /path/to/deploy
+          # Create .env file
+          echo "DB_NAME=${{ secrets.DB_NAME }}" > .env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+          echo "GOOGLE_APPLICATION_CREDENTIALS=/secrets/mapdragon-unified-creds.json" >> .env
+          
+          # Create secrets directory
+          sudo mkdir -p /secrets
+          
+          # Write Google credentials JSON
+          echo '${{ secrets.GOOGLE_CREDS_JSON_B64 }}' | base64 -d | sudo tee /secrets/mapdragon-unified-creds.json > /dev/null
+          
+          # Install Docker Compose if missing
+          if ! command -v docker-compose &> /dev/null; then
+            sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" \
+            -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+          fi
+          
+          # Deploy containers
+          sudo docker-compose down
+          sudo docker-compose up -d --build
