@@ -36,7 +36,7 @@ Before starting, ensure you have the following installed:
 ### 2. **Locutus** (Backend)
 
 - **Build Context**: `./locutus`
-- **Dockerfile**: `Dockerfile.mac` (for ARM-based MacBooks) or `Dockerfile` (for x86)
+- **Dockerfile**: `Dockerfile` (automatically detects and handles ARM64/Apple Silicon requirements)
 - **Ports**: Exposes port `80` on both the host and the container
 - **Environment Variables**:
   - `FLASK_ENV=local`: Runs Flask in local development mode
@@ -84,24 +84,22 @@ git clone https://github.com/NIH-NCPI/locutus.git locutus
 
 ### 2. Prepare Required Files
 
-- **Using Dockerfile.mac**
-   If you are using a MacBook with an ARM-based chip, ensure you are using the Dockerfile.mac located in the locutus directory. This Dockerfile is specifically tailored to build and run the Locutus service on ARM-based hardware.
 - **Google Cloud Credentials**:
   Place your GOOGLE_APPLICATION_CREDENTIALS file (`mapdragon-unified-creds.json`) in the project root (contact Morgan to get this file).
 - **Environment File**:
-  Create a `.env` file in the root directory with necessary environment variables. Example:
+  Create a `.env` file in the root directory with necessary environment variables.w Example:
   ```env
   REGION="us-central1"
   SERVICE="mapdragon-unified"
   PROJECT_ID="mapdragon-unified"
   DB_NAME=admin
   DB_PASSWORD=password
-  MONGO_URI=mongodb://${DB_NAME}:${DB_PASSWORD}@mongo:27017
+  MONGO_URI1=mongodb://${DB_NAME}:${DB_PASSWORD}@mongo:27017
   GOOGLE_APPLICATION_CREDENTIALS=./mapdragon-unified-creds.json
   DB_TYPE=mongodb
   FIRESTORE_DB_USERNAME=your-firestore-db-username-here
   FIRESTORE_DB_PASSWORD=your-firestore-db-password-here
-  FIRESTORE_MONGO_URI=mongodb://${FIRESTORE_DB_USERNAME}:${FIRESTORE_DB_PASSWORD}.us-central1.firestore.goog:443/loc-mongo?tls=true&retryWrites=false&loadBalanced=true&authMechanism=SCRAM-SHA-256&authMechanismProperties=ENVIRONMENT:gcp,TOKEN_RESOURCE:FIRESTORE
+  MONGO_URI=mongodb://${FIRESTORE_DB_USERNAME}:${FIRESTORE_DB_PASSWORD}.us-central1.firestore.goog:443/loc-mongo?tls=true&retryWrites=false&loadBalanced=true&authMechanism=SCRAM-SHA-256&authMechanismProperties=ENVIRONMENT:gcp,TOKEN_RESOURCE:FIRESTORE
   ```
   
   **Note**: Replace `your-firestore-password-here` with the actual password from your Firestore MongoDB "Users" tab. The database name in the URI (`loc-mongo`) should match your Firestore MongoDB-compatible Database ID exactly.
