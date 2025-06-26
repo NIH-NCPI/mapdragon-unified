@@ -89,20 +89,29 @@ git clone https://github.com/NIH-NCPI/locutus.git locutus
 - **Environment File**:
   Create a `.env` file in the root directory with necessary environment variables.w Example:
   ```env
+  # These are required if you are connecting to a GCP managed service like Firestore
   REGION="us-central1"
   SERVICE="mapdragon-unified"
   PROJECT_ID="mapdragon-unified"
-  DB_NAME=admin
-  DB_PASSWORD=password
-  MONGO_URI1=mongodb://${DB_NAME}:${DB_PASSWORD}@mongo:27017
+  
   GOOGLE_APPLICATION_CREDENTIALS=./mapdragon-unified-creds.json
-  DB_TYPE=mongodb
   FIRESTORE_DB_USERNAME=your-firestore-db-username-here
   FIRESTORE_DB_PASSWORD=your-firestore-db-password-here
-  MONGO_URI=mongodb://${FIRESTORE_DB_USERNAME}:${FIRESTORE_DB_PASSWORD}.us-central1.firestore.goog:443/loc-mongo?tls=true&retryWrites=false&loadBalanced=true&authMechanism=SCRAM-SHA-256&authMechanismProperties=ENVIRONMENT:gcp,TOKEN_RESOURCE:FIRESTORE
+  # If using the enterprise version of firestore, you would provide the mongo URI
+  # MONGO_URI=mongodb://${FIRESTORE_DB_USERNAME}:${FIRESTORE_DB_PASSWORD}.us-central1.firestore.goog:443/locutus?tls=true&retryWrites=false&loadBalanced=true&authMechanism=SCRAM-SHA-256&authMechanismProperties=ENVIRONMENT:gcp,TOKEN_RESOURCE:FIRESTORE
+  
+  # For regular mongoDB, you provide the database's connection string
+  # You only need DB and Password if you are connecting to a server outside your local machine
+  # DB_NAME=admin
+  # DB_PASSWORD=password
+  # MONGO_URI=mongodb://${DB_NAME}:${DB_PASSWORD}@mongo:27017/locutus
+  MONGO_URI=mongodb://localhost:27017/locutus
+
+  # MongoDB databases require you to provide the database name in your connection string like those shown above
+  DB_TYPE=mongodb
   ```
   
-  **Note**: Replace `your-firestore-password-here` with the actual password from your Firestore MongoDB "Users" tab. The database name in the URI (`loc-mongo`) should match your Firestore MongoDB-compatible Database ID exactly.
+  **Note**: Replace `your-firestore-password-here` with the actual password from your Firestore MongoDB "Users" tab. The database name in the URI (`locutus`) should match your Firestore MongoDB-compatible Database ID exactly.
 - **Nginx Configuration**:
   Ensure `nginx.conf` exists in the project root with a valid configuration. Example:
   ```nginx
