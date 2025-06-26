@@ -89,14 +89,14 @@ git clone https://github.com/NIH-NCPI/locutus.git locutus
 - **Environment File**:
   Create a `.env` file in the root directory with necessary environment variables.w Example:
   ```env
-  # These are required if you are connecting to a GCP managed service like Firestore
-  REGION="us-central1"
-  SERVICE="mapdragon-unified"
-  PROJECT_ID="mapdragon-unified"
+  # These are required if you are connecting to a GCP managed service like Firestore or running the application on the cloude. For your local machine, you can skip them. 
+  # REGION="us-central1"
+  # SERVICE="mapdragon-unified"
+  # PROJECT_ID="mapdragon-unified"
   
-  GOOGLE_APPLICATION_CREDENTIALS=./mapdragon-unified-creds.json
-  FIRESTORE_DB_USERNAME=your-firestore-db-username-here
-  FIRESTORE_DB_PASSWORD=your-firestore-db-password-here
+  # GOOGLE_APPLICATION_CREDENTIALS=./mapdragon-unified-creds.json
+  # FIRESTORE_DB_USERNAME=your-firestore-db-username-here
+  # FIRESTORE_DB_PASSWORD=your-firestore-db-password-here
   # If using the enterprise version of firestore, you would provide the mongo URI
   # MONGO_URI=mongodb://${FIRESTORE_DB_USERNAME}:${FIRESTORE_DB_PASSWORD}.us-central1.firestore.goog:443/locutus?tls=true&retryWrites=false&loadBalanced=true&authMechanism=SCRAM-SHA-256&authMechanismProperties=ENVIRONMENT:gcp,TOKEN_RESOURCE:FIRESTORE
   
