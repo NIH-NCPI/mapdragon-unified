@@ -1,9 +1,7 @@
-version: '3.9'
-
 services:
   mapdragon:
     build:
-      context: ./map-dragon
+      context: ./map-dragon # https://github.com/NIH-NCPI/map-dragon.git
       dockerfile: Dockerfile
       args:
         ENV: loc
@@ -11,11 +9,12 @@ services:
       - mapdragon-network
     container_name: mapdragon_app
     ports:
-      - "5173:5173"
-
+      - "5173:5000"
+    volumes:
+      - ./mapdragon.env:/.env
   locutus:
-    build:
-      context: ./locutus
+    build: 
+      context: https://github.com/NIH-NCPI/locutus.git#mongodb
       dockerfile: Dockerfile
     container_name: locutus_api
     networks:
@@ -49,5 +48,5 @@ networks:
   mapdragon-network:
     external: true
 
-volumes:
-  mongo-data:
+# volumes:
+#   mongo-data:
