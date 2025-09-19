@@ -23,7 +23,7 @@ on:
         default: 'main'
 
 env:
-
+  VITE_CLIENT_ID: ${{ vars.VITE_CLIENT_ID }}
   PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
   REGION: ${{ vars.GCP_REGION }}
   SERVICE: ${{ vars.GCP_SERVICE }}
@@ -78,7 +78,7 @@ jobs:
           echo "DOCKER_TAG=${{ env.DOCKER_TAG }}" >> $GITHUB_ENV 
 
           # docker build -t "${env.DOCKER_TAG}" --build-arg ENV=${{ github.event.inputs.environment }} .
-          docker build -t "${{ env.DOCKER_TAG }}" .
+          docker build -t "${{ env.DOCKER_TAG }}" --build-arg VITE_CLIENT_ID=${{ env.VITE_CLIENT_ID }} --build-arg VITE_MAPDRAGON_VERSION=${{ github.event.inputs.version }} .
 
       - name: 'Push Docker Image'
         run: |-
