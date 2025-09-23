@@ -12,10 +12,10 @@ on:
         type: string
         default: 'dev'
       version:
-        description: 'Optional version for the deployment'
+        description: 'Optional version for the deployment (leaving this blank should use the github tag)'
         required: true
         type: string
-        default: 'v0.0.0-env'
+        default: ''
       deploy_branch:
         description: 'Branch to deploy to the environment'
         required: true

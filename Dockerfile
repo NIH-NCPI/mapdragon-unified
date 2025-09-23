@@ -5,7 +5,8 @@ FROM node:18-alpine AS build
 
 ARG VITE_CLIENT_ID
 ARG VITE_VOCAB_ENDPOINT=/api 
-ARG VITE_MAPDRAGON_VERSION="Local Development"
+ARG VITE_MAPDRAGON_VERSION
+ARG FLASK_ENV=development 
 
 # Add git 
 RUN apk update && apk add --no-cache git
@@ -13,9 +14,13 @@ RUN apk update && apk add --no-cache git
 WORKDIR /app
 # Pull MD down from GH
 RUN git clone https://github.com/NIH-NCPI/map-dragon .
+
 RUN echo "VITE_CLIENT_ID=$VITE_CLIENT_ID" > .env && \
- echo "VITE_VOCAB_ENDPOINT=$VITE_VOCAB_ENDPOINT" >> .env && \
- echo "VITE_MAPDRAGON_VERSION=$VITE_MAPDRAGON_VERSION" >> .env 
+  echo "VITE_VOCAB_ENDPOINT=$VITE_VOCAB_ENDPOINT" >> .env
+RUN  if [[ -z $VITE_MAPDRAGON_VERSION ]] ; \
+    then echo "VITE_MAPDRAGON_VERSION=`git describe --tags`-$FLASK_ENV" >> .env ; \
+  else echo "VITE_MAPDRAGON_VERSION=$VITE_MAPDRAGON_VERSION" >> .env ; \
+  fi
 
 RUN cat .env 
 
