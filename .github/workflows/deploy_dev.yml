@@ -78,7 +78,7 @@ jobs:
       - name: 'Build and Push Container'
         run: |
           echo "DOCKER_TAG=${{ env.DOCKER_TAG }}" >> $GITHUB_ENV 
-          docker build --tag "${env.DOCKER_TAG}" \
+          docker build --tag "${{env.DOCKER_TAG}}" \
               --build-arg VITE_CLIENT_ID=${{ env.VITE_CLIENT_ID }} \
               --build-arg VITE_MAPDRAGON_VERSION=${{ github.event.inputs.md_version }} \
               .
