@@ -20,8 +20,8 @@ RUN echo "VITE_CLIENT_ID=$VITE_CLIENT_ID" > .env && \
 RUN  if [[ -z $VITE_MAPDRAGON_VERSION ]] ; \
     then echo "VITE_MAPDRAGON_VERSION=`git describe --tags`-$FLASK_ENV" >> .env ; \
   else echo "VITE_MAPDRAGON_VERSION=$VITE_MAPDRAGON_VERSION" >> .env ; \
-  fi \
-  echo "VITE_GH_VERSION=`git describe --tags`-$FLASK_ENV" >> .env
+  fi
+RUN echo "VITE_GH_VERSION=`git describe --tags`-$FLASK_ENV" >> .env
 
 RUN cat .env 
 
