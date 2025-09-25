@@ -21,14 +21,13 @@ on:
         default: ''
 env:
   VITE_CLIENT_ID: ${{ vars.VITE_CLIENT_ID }}
-  PROJECT_ID: ${{ secrets.PROJECT_ID }}
-  REGION: ${{ secrets.REGION_LOC_1 }}
-  SERVICE: ${{ secrets.SERVICE }}
-  IMAGE_NAME: 'locutus_img'
-  GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  REGION: ${{ vars.GCP_REGION }}
+  SERVICE: ${{ vars.GCP_SERVICE }}
+  GCP_CREDENTIALS:  ${{ secrets.GCP_CREDENTIALS }}
   UMLS_API_KEY: ${{ secrets.UMLS_API_KEY }}
   DOCKER_TAG: "${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GCP_SERVICE }}/${{ vars.IMAGE_NAME }}:${{ github.sha }}"
-
+  IMAGE_NAME: 'locutus_img'
 jobs:
   
   deploy:
@@ -93,5 +92,5 @@ jobs:
         with:
           service: '${{ env.SERVICE }}'
           region: '${{ env.REGION }}'
-          image: "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          image: "${{ env.DOCKER_TAG }}"
           env_vars: VERSION=${{ env.VERSION }}, UMLS_API_KEY=${{ env.UMLS_API_KEY }}, MONGO_URI=${{ secrets.MONGO_URI }}
