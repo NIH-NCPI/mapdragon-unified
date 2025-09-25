@@ -11,7 +11,7 @@ on:
     inputs:
       backend_version:
         description: 'Optional version for the deployment (leaving this blank should use the github tag)'
-        required: true
+        required: false
         type: string
         default: ''
       md_version: 
