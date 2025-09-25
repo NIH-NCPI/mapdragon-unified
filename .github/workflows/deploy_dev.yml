@@ -1,63 +1,90 @@
-name: Deploy Docker Compose
+# This workflow build and push a Docker container to Google Artifact Registry
+# and deploy it on Cloud Run when a PR has been approved by a reviewer.
+# Will create a version env variable using the PR number.
+
+name: 'Dev Deploy'
 
 on:
-  push:
-    branches: [ "main" ]
+  pull_request_review:
+    types: [submitted, edited] # submitted, reviewer edits the PR (ex comments)
+  workflow_dispatch: # This enables manual triggers
+    inputs:
+      version:
+        description: 'Optional version for the deployment (leaving this blank should use the github tag)'
+        required: true
+        type: string
+        default: ''
+  
 env:
-
+  VITE_CLIENT_ID: ${{ vars.VITE_CLIENT_ID }}
   PROJECT_ID: ${{ secrets.PROJECT_ID }}
   REGION: ${{ secrets.REGION_LOC_1 }}
   SERVICE: ${{ secrets.SERVICE }}
-  IMAGE_NAME: 'mapdragonUnified_img'
-  GCP_CREDENTIALS:  ${{ secrets.GCP_CREDENTIALS }}
-
+  IMAGE_NAME: 'locutus_img'
+  GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+  UMLS_API_KEY: ${{ secrets.UMLS_API_KEY }}
+  DOCKER_TAG: "${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GCP_SERVICE }}/${{ vars.IMAGE_NAME }}:${{ github.sha }}"
 
 jobs:
+  
   deploy:
-    runs-on: ubuntu-latest
-     # If PR is approved and the PR is for the 'main' branch
+    runs-on: 'ubuntu-latest'
+
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      (github.event_name == 'pull_request_review' && github.event.review.state == 'approved' && github.event.pull_request.base.ref == 'main')
+    
     environment:
       name: dev
+
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: 'Checkout'
+        uses: 'actions/checkout@v4'
 
-    - name: Copy files to server
-      uses: appleboy/scp-action@v0.1.4
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        source: "."
-        target: "/path/to/deploy"
-        rm: true
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: ${{ env.GCP_CREDENTIALS }}
 
-    - name: Deploy using Docker Compose
-      uses: appleboy/ssh-action@v0.1.10
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        script: |
-          cd /path/to/deploy
-          # Create .env file
-          echo "DB_NAME=${{ secrets.DB_NAME }}" > .env
-          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-          echo "GOOGLE_APPLICATION_CREDENTIALS=/secrets/mapdragon-unified-creds.json" >> .env
-          
-          # Create secrets directory
-          sudo mkdir -p /secrets
-          
-          # Write Google credentials JSON
-          echo '${{ secrets.GOOGLE_CREDS_JSON_B64 }}' | base64 -d | sudo tee /secrets/mapdragon-unified-creds.json > /dev/null
-          
-          # Install Docker Compose if missing
-          if ! command -v docker-compose &> /dev/null; then
-            sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" \
-            -o /usr/local/bin/docker-compose
-            sudo chmod +x /usr/local/bin/docker-compose
+      - name: 'Docker Auth'
+        run: |
+          gcloud auth configure-docker '${{ env.REGION }}-docker.pkg.dev'
+
+
+      - name: Configure Git user
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Set Version
+        id: set_version
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${{ github.event.pull_request.number }}"
           fi
-          
-          # Deploy containers
-          sudo docker-compose down
-          sudo docker-compose up -d --build
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "Set Version: ${VERSION}"
+  
+      - name: 'Build and Push Container'
+        run: |
+          echo "DOCKER_TAG=${{ env.DOCKER_TAG }}" >> $GITHUB_ENV 
+          docker build --tag "${env.DOCKER_TAG}" .
+
+      - name: 'Push Container to GCP'
+        run: |
+          docker push "${DOCKER_TAG}"
+
+      - name: 'Deploy to Cloud Run'
+        uses: 'google-github-actions/deploy-cloudrun@v2'
+        with:
+          service: '${{ env.SERVICE }}'
+          region: '${{ env.REGION }}'
+          image: "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          env_vars: VERSION=${{ env.VERSION }}, UMLS_API_KEY=${{ env.UMLS_API_KEY }}, MONGO_URI=${{ secrets.MONGO_URI }}
