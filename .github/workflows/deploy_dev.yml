@@ -9,12 +9,16 @@ on:
     types: [submitted, edited] # submitted, reviewer edits the PR (ex comments)
   workflow_dispatch: # This enables manual triggers
     inputs:
-      version:
+      backend_version:
         description: 'Optional version for the deployment (leaving this blank should use the github tag)'
         required: true
         type: string
         default: ''
-  
+      md_version: 
+        description: 'Optional version for the version of MD being deployed'
+        required: false 
+        type: string 
+        default: ''
 env:
   VITE_CLIENT_ID: ${{ vars.VITE_CLIENT_ID }}
   PROJECT_ID: ${{ secrets.PROJECT_ID }}
@@ -65,7 +69,7 @@ jobs:
         id: set_version
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            VERSION="${{ github.event.inputs.version }}"
+            VERSION="${{ github.event.inputs.backend_version }}"
           else
             VERSION="${{ github.event.pull_request.number }}"
           fi
@@ -75,7 +79,10 @@ jobs:
       - name: 'Build and Push Container'
         run: |
           echo "DOCKER_TAG=${{ env.DOCKER_TAG }}" >> $GITHUB_ENV 
-          docker build --tag "${env.DOCKER_TAG}" .
+          docker build --tag "${env.DOCKER_TAG}" \
+              --build-arg VITE_CLIENT_ID=${{ env.VITE_CLIENT_ID }} \
+              --build-arg VITE_MAPDRAGON_VERSION=${{ github.event.inputs.md_version }} \
+              .
 
       - name: 'Push Container to GCP'
         run: |
