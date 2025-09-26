@@ -101,7 +101,7 @@ jobs:
         with:
           service: '${{ env.SERVICE }}'
           region: '${{ env.REGION }}'
-          image: "$DOCKER_TAG"
+          image: "{$DOCKER_TAG}"
           env_vars: VERSION=${{ env.VERSION }}, UMLS_API_KEY=${{ env.UMLS_API_KEY }}, MONGO_URI=${{ secrets.MONGO_URI }}
 
       - name: Log in to GitHub Container Registry
