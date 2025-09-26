@@ -109,7 +109,7 @@ jobs:
 
       - name: Tag and Push to GitHub Container Registry
         run: |
-          GHCR_TAG: "ghcr.io/NIH-NCIP/${{ env.IMAGE_TAG }}"
+          GHCR_TAG="ghcr.io/NIH-NCIP/${{ env.IMAGE_TAG }}"
 
           docker tag "${IMAGE_TAG}" "${GHCR_TAG}"
           docker push "${GHCR_TAG}"
