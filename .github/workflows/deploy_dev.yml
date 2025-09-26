@@ -62,7 +62,7 @@ jobs:
         id: get_tag
         run: |
           git fetch --tags
-          latest_tag=$(git describe --tags --abbrev=0)
+          latest_tag=$(git describe --tags --abbrev=0 --always)
           echo "Latest tag is: $latest_tag"
           echo "GITHUB_VERSION=$latest_tag" >> $GITHUB_ENV
           echo "IMAGE_TAG=$IMAGE_NAME:$latest_tag" >> $GITHUB_ENV
@@ -94,14 +94,14 @@ jobs:
 
       - name: 'Push Container to GCP'
         run: |
-          docker push "$DOCKER_TAG"
+          docker push "${{ env.DOCKER_TAG }}"
 
       - name: 'Deploy to Cloud Run'
         uses: 'google-github-actions/deploy-cloudrun@v2'
         with:
           service: '${{ env.SERVICE }}'
           region: '${{ env.REGION }}'
-          image: "${DOCKER_TAG}"
+          image: "${{ env.DOCKER_TAG }}"
           env_vars: VERSION=${{ env.VERSION }}, UMLS_API_KEY=${{ env.UMLS_API_KEY }}, MONGO_URI=${{ secrets.MONGO_URI }}
 
       - name: Log in to GitHub Container Registry
@@ -109,7 +109,7 @@ jobs:
 
       - name: Tag and Push to GitHub Container Registry
         run: |
-          GHCR_TAG: "ghcr.io/NIH-NCIP/${{ vars.IMAGE_NAME }}:${{ github.sha }}"
+          GHCR_TAG: "ghcr.io/NIH-NCIP/${{ env.IMAGE_TAG }}"
 
           docker tag "${IMAGE_TAG}" "${GHCR_TAG}"
           docker push "${GHCR_TAG}"
