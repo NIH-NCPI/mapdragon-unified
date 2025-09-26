@@ -87,13 +87,14 @@ jobs:
       - name: 'Build and Push Container'
         run: |
           echo "DOCKER_TAG=$DOCKER_TAG" >> $GITHUB_ENV 
-          docker build --tag "$DOCKER_TAG" \
+          docker build --tag "$IMAGE_TAG" \
               --build-arg VITE_CLIENT_ID=${{ env.VITE_CLIENT_ID }} \
               --build-arg VITE_MAPDRAGON_VERSION=${{ github.event.inputs.md_version }} \
               .
 
       - name: 'Push Container to GCP'
         run: |
+          docker tag "${{ env.IMAGE_TAG }}" "${{ env.DOCKER_TAG }}"
           docker push "${{ env.DOCKER_TAG }}"
 
       - name: 'Deploy to Cloud Run'
