@@ -1,4 +1,4 @@
-# This workflow build and push a Docker container to Google Artifact Registry
+.# This workflow build and push a Docker container to Google Artifact Registry
 # and deploy it on Cloud Run when a PR has been approved by a reviewer.
 # Will create a version env variable using the PR number.
 
@@ -111,7 +111,7 @@ jobs:
 
       - name: Tag and Push to GitHub Container Registry
         run: |
-          GHCR_TAG="ghcr.io/${{ GHCRIO_ORG }}/${{ env.IMAGE_TAG }}"
+          GHCR_TAG="ghcr.io/${{ env.GHCRIO_ORG }}/${{ env.IMAGE_TAG }}"
 
           docker tag "${IMAGE_TAG}" "${GHCR_TAG}"
           docker push "${GHCR_TAG}"
