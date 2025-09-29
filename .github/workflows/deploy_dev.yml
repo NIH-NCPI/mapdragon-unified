@@ -27,7 +27,7 @@ env:
   GCP_CREDENTIALS:  ${{ secrets.GCP_CREDENTIALS }}
   UMLS_API_KEY: ${{ secrets.UMLS_API_KEY }}
   IMAGE_TAG: "${{ vars.IMAGE_NAME }}:${{ github.sha }}"
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ vars.IMAGE_NAME }}
   GHCRIO_ORG: 'carrollaboratory'
 jobs:
   
