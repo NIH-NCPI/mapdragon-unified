@@ -28,6 +28,7 @@ env:
   UMLS_API_KEY: ${{ secrets.UMLS_API_KEY }}
   IMAGE_TAG: "${{ vars.IMAGE_NAME }}:${{ github.sha }}"
   IMAGE_NAME: 'locutus_img'
+  GHCRIO_ORG: 'carrollaboratory'
 jobs:
   
   deploy:
@@ -110,7 +111,7 @@ jobs:
 
       - name: Tag and Push to GitHub Container Registry
         run: |
-          GHCR_TAG="ghcr.io/nih-ncpi/${{ env.IMAGE_TAG }}"
+          GHCR_TAG="ghcr.io/${{ GHCRIO_ORG }}/${{ env.IMAGE_TAG }}"
 
           docker tag "${IMAGE_TAG}" "${GHCR_TAG}"
           docker push "${GHCR_TAG}"
