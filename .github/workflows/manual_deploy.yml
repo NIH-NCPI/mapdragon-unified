@@ -11,7 +11,12 @@ on:
         required: true
         type: string
         default: 'dev'
-      version:
+      md_version: 
+        description: 'Optional version for the version of MD being deployed'
+        required: false 
+        type: string 
+        default: ''
+      backend_version:
         description: 'Optional version for the deployment (leaving this blank should use the github tag)'
         required: false
         type: string
@@ -69,7 +74,7 @@ jobs:
       
       - name: 'Set Version'
         run: |
-          VERSION="${{ github.event.inputs.version }}"
+          VERSION="${{ github.event.inputs.backend_version }}"
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
           echo "Extracted Version: ${VERSION}"
 
@@ -78,7 +83,7 @@ jobs:
           echo "DOCKER_TAG=${{ env.DOCKER_TAG }}" >> $GITHUB_ENV 
 
           # docker build -t "${env.DOCKER_TAG}" --build-arg ENV=${{ github.event.inputs.environment }} .
-          docker build -t "${{ env.DOCKER_TAG }}" --build-arg VITE_CLIENT_ID=${{ env.VITE_CLIENT_ID }} --build-arg VITE_MAPDRAGON_VERSION=${{ github.event.inputs.version }} .
+          docker build -t "${{ env.DOCKER_TAG }}" --build-arg VITE_CLIENT_ID=${{ env.VITE_CLIENT_ID }} --build-arg VITE_MAPDRAGON_VERSION=${{ github.event.inputs.md_version }} .
 
       - name: 'Push Docker Image'
         run: |-
