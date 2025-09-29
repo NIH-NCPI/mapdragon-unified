@@ -108,7 +108,7 @@ jobs:
           env_vars: VERSION=${{ env.VERSION }}, UMLS_API_KEY=${{ env.UMLS_API_KEY }}, MONGO_URI=${{ secrets.MONGO_URI }}
 
       - name: Log in to GitHub Container Registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        run: echo "${{ secrets.GHRCIO_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Tag and Push to GitHub Container Registry
         run: |
