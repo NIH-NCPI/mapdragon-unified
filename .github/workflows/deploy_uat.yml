@@ -109,13 +109,16 @@ jobs:
           image: "${{ env.DOCKER_TAG }}"
           env_vars: VERSION=${{ env.VERSION }}, UMLS_API_KEY=${{ env.UMLS_API_KEY }}, MONGO_URI=${{ secrets.MONGO_URI }}
 
-      - name: Log in to GitHub Container Registry
-        run: echo "${{ secrets.GHRCIO_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      # I don't think this belongs in UAT, but I'm leaving it here for the time being until we've had a chance
+      # to discuss a complete strategy for all things related to these deployment automations
+      
+      #- name: Log in to GitHub Container Registry
+      #  run: echo "${{ secrets.GHRCIO_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Tag and Push to GitHub Container Registry
-        run: |
-          GHCR_TAG="ghcr.io/${{ env.GHCRIO_ORG }}/${{ env.IMAGE_TAG }}"
+      #- name: Tag and Push to GitHub Container Registry
+      #  run: |
+      #    GHCR_TAG="ghcr.io/${{ env.GHCRIO_ORG }}/${{ env.IMAGE_TAG }}"
 
-          docker tag "${IMAGE_TAG}" "${GHCR_TAG}"
-          docker push "${GHCR_TAG}"
+      #    docker tag "${IMAGE_TAG}" "${GHCR_TAG}"
+      #    docker push "${GHCR_TAG}"
       
