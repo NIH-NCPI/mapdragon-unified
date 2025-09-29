@@ -1,0 +1,121 @@
+# This workflow build and push a Docker container to Google Artifact Registry
+# and deploy it on Cloud Run when a PR has been approved by a reviewer.
+# Will create a version env variable using the PR number.
+
+name: 'UAT Deploy'
+
+on:
+  pull_request:
+    branches:
+      - release
+    types: [opened, edited, synchronize] # PR opened, edited(PR title, etc), new commits are pushed.
+  workflow_dispatch: # This enables manual triggers
+    inputs:
+      backend_version:
+        description: 'Optional version for the deployment (leaving this blank should use the github tag)'
+        required: false
+        type: string
+        default: ''
+      md_version: 
+        description: 'Optional version for the version of MD being deployed'
+        required: false 
+        type: string 
+        default: ''
+env:
+  VITE_CLIENT_ID: ${{ vars.VITE_CLIENT_ID }}
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  REGION: ${{ vars.GCP_REGION }}
+  SERVICE: ${{ vars.GCP_SERVICE }}
+  GCP_CREDENTIALS:  ${{ secrets.GCP_CREDENTIALS }}
+  UMLS_API_KEY: ${{ secrets.UMLS_API_KEY }}
+  IMAGE_TAG: "${{ vars.IMAGE_NAME }}:${{ github.sha }}"
+  IMAGE_NAME: ${{ vars.IMAGE_NAME }}
+  GHCRIO_ORG: 'carrollaboratory'
+jobs:
+  
+  deploy:
+    runs-on: 'ubuntu-latest'
+
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      (github.event.pull_request.base.ref == 'release')
+    
+    environment:
+      name: qa
+
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      packages: write
+    steps:
+      - name: 'Checkout'
+        uses: 'actions/checkout@v4'
+
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: ${{ env.GCP_CREDENTIALS }}
+
+      - name: 'Docker Auth'
+        run: |
+          gcloud auth configure-docker '${{ env.REGION }}-docker.pkg.dev'
+
+      - name: 'github_version'
+        id: get_tag
+        run: |
+          git fetch --tags
+          latest_tag=$(git describe --tags --abbrev=0 --always)
+          echo "Latest tag is: $latest_tag"
+          echo "GITHUB_VERSION=$latest_tag" >> $GITHUB_ENV
+          echo "IMAGE_TAG=$IMAGE_NAME:$latest_tag" >> $GITHUB_ENV
+          echo "DOCKER_TAG=${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GCP_SERVICE }}/${IMAGE_TAG}" >> $GITHUB_ENV
+
+      - name: Configure Git user
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Set Version
+        id: set_version
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSION="${{ github.event.inputs.backend_version }}"
+          else
+            VERSION="${{ github.event.pull_request.number }}"
+          fi
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "Set Version: ${VERSION}"
+  
+      - name: 'Build and Push Container'
+        run: |
+          echo "DOCKER_TAG=$DOCKER_TAG" >> $GITHUB_ENV 
+          docker build --tag "$IMAGE_TAG" \
+              --build-arg VITE_CLIENT_ID=${{ env.VITE_CLIENT_ID }} \
+              --build-arg VITE_MAPDRAGON_VERSION=${{ github.event.inputs.md_version }} \
+              .
+
+      - name: 'Push Container to GCP'
+        run: |
+          docker tag "${{ env.IMAGE_TAG }}" "${{ env.DOCKER_TAG }}"
+          docker push "${{ env.DOCKER_TAG }}"
+
+      - name: 'Deploy to Cloud Run'
+        uses: 'google-github-actions/deploy-cloudrun@v2'
+        with:
+          service: '${{ env.SERVICE }}'
+          region: '${{ env.REGION }}'
+          image: "${{ env.DOCKER_TAG }}"
+          env_vars: VERSION=${{ env.VERSION }}, UMLS_API_KEY=${{ env.UMLS_API_KEY }}, MONGO_URI=${{ secrets.MONGO_URI }}
+
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GHRCIO_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Tag and Push to GitHub Container Registry
+        run: |
+          GHCR_TAG="ghcr.io/${{ env.GHCRIO_ORG }}/${{ env.IMAGE_TAG }}"
+
+          docker tag "${IMAGE_TAG}" "${GHCR_TAG}"
+          docker push "${GHCR_TAG}"
+      
