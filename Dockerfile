@@ -5,8 +5,8 @@ FROM node:18-alpine AS build
 
 ARG VITE_CLIENT_ID
 ARG VITE_VOCAB_ENDPOINT=/api 
-ARG VITE_MAPDRAGON_VERSION
-ARG FLASK_ENV=development 
+ARG VITE_MAPDRAGON_VERSION=''
+ARG FLASK_ENV='dev' 
 
 # Add git 
 RUN apk update && apk add --no-cache git
@@ -20,6 +20,7 @@ RUN echo "VITE_CLIENT_ID=$VITE_CLIENT_ID" > .env && \
 RUN  if [[ -z $VITE_MAPDRAGON_VERSION ]] ; \
     then echo "VITE_MAPDRAGON_VERSION=`git describe --tags`-$FLASK_ENV" >> .env ; \
   else echo "VITE_MAPDRAGON_VERSION=$VITE_MAPDRAGON_VERSION" >> .env ; \
+  echo "VITE_GH_VERSION=`git describe --tags`-$FLASK_ENV" \
   fi
 
 RUN cat .env 
@@ -31,7 +32,6 @@ RUN npm run build
 FROM python:3.13-alpine
 ARG FLASK_PORT=8080
 # ARG MONGO_URI=mongodb://localhost:27017/locutus
-ARG FLASK_ENV=development 
 
 
 
