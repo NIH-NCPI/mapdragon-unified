@@ -3,25 +3,32 @@
 # FROM node:latest as build
 FROM node:18-alpine AS build 
 
+# We will need to update these commits each time we want to publish a new
+# release. I'm setting these as ENVs so that they can exist outside of 
+# any particular build. The Map Dragon version must be provided here as 
+# well so that it gets baked into the build. 
+ARG MAPDRAGON_COMMIT=117d326eaed80d3fc54121893f181d1d61700658
+ARG VITE_MAPDRAGON_VERSION='v2.2.1'
+
+ENV LOCUTUS_COMMIT=929f72aa2b34628d69d66ddcd4f93bfe93d98656
+
 ARG VITE_CLIENT_ID
 ARG VITE_VOCAB_ENDPOINT=/api 
-ARG VITE_MAPDRAGON_VERSION=''
-ARG FLASK_ENV='dev' 
+ARG DEPLOY_ENV='dev' 
+
 
 # Add git 
 RUN apk update && apk add --no-cache git
 
 WORKDIR /app
 # Pull MD down from GH
-RUN git clone https://github.com/NIH-NCPI/map-dragon .
+RUN git clone https://github.com/NIH-NCPI/map-dragon . && \
+  git checkout $MAPDRAGON_COMMIT 
 
 RUN echo "VITE_CLIENT_ID=$VITE_CLIENT_ID" > .env && \
-  echo "VITE_VOCAB_ENDPOINT=$VITE_VOCAB_ENDPOINT" >> .env
-RUN  if [[ -z $VITE_MAPDRAGON_VERSION ]] ; \
-    then echo "VITE_MAPDRAGON_VERSION=`git describe --tags`-$FLASK_ENV" >> .env ; \
-  else echo "VITE_MAPDRAGON_VERSION=$VITE_MAPDRAGON_VERSION" >> .env ; \
-  echo "VITE_GH_VERSION=`git describe --tags`-$FLASK_ENV" \
-  fi
+  echo "VITE_VOCAB_ENDPOINT=$VITE_VOCAB_ENDPOINT" >> .env && \
+  echo "VITE_MAPDRAGON_VERSION=$VITE_MAPDRAGON_VERSION" >> .env && \
+  echo "VITE_GH_VERSION=`git describe --tags`-$DEPLOY_ENV" >> .env
 
 RUN cat .env 
 
@@ -31,7 +38,6 @@ RUN npm run build
 # Stage 2: 
 FROM python:3.13-alpine
 ARG FLASK_PORT=8080
-# ARG MONGO_URI=mongodb://localhost:27017/locutus
 
 
 
@@ -39,7 +45,12 @@ RUN apk update && apk add --no-cache git
 
 WORKDIR /app
 
-RUN git clone -b mongodb https://github.com/NIH-NCPI/locutus .
+RUN echo git clone https://github.com/NIH-NCPI/locutus . && \
+  echo git checkout $LOCUTUS_COMMIT 
+
+RUN git clone https://github.com/NIH-NCPI/locutus . && \
+  git checkout $LOCUTUS_COMMIT 
+
 COPY --from=build /app/dist ./src/locutus/static
 
 RUN pip install gunicorn && pip install .
@@ -49,9 +60,6 @@ ENV FLASK_RUN_HOST=0.0.0.0
 ENV FLASK_RUN_PORT=$FLASK_PORT
 ENV HOST=0.0.0.0
 ENV UNICORN_HOST=0.0.0.0:$FLASK_PORT 
-# ENV FLASK_ENV=$FLASK_ENV
-# ENV MONGO_URI=$MONGO_URI
-# ENV UMLS_API_KEY=$UMLS_API_KEY
 
 EXPOSE $FLASK_PORT 
 
