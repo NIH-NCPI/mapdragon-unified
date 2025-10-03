@@ -14,11 +14,6 @@ on:
         required: false
         type: string
         default: ''
-      md_version: 
-        description: 'Optional version for the version of MD being deployed'
-        required: false 
-        type: string 
-        default: ''
 env:
   VITE_CLIENT_ID: ${{ vars.VITE_CLIENT_ID }}
   PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
