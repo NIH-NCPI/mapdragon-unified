@@ -91,7 +91,6 @@ jobs:
           echo "DOCKER_TAG=$DOCKER_TAG" >> $GITHUB_ENV 
           docker build --tag "$IMAGE_TAG" \
               --build-arg VITE_CLIENT_ID=${{ env.VITE_CLIENT_ID }} \
-              --build-arg VITE_MAPDRAGON_VERSION=${{ github.event.inputs.md_version }} \
               .
 
       - name: 'Push Container to GCP'
