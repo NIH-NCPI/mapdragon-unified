@@ -10,8 +10,6 @@ FROM node:18-alpine AS build
 ARG MAPDRAGON_COMMIT="506c53eabf2814f9a6d93aaed985565a03554a02"
 ARG VITE_MAPDRAGON_VERSION="v2.2.2"
 
-ENV LOCUTUS_COMMIT="d091bf21574d3ac743f481fbaad1c40555fec72e"
-
 ARG VITE_CLIENT_ID
 ARG VITE_VOCAB_ENDPOINT=/api 
 ARG DEPLOY_ENV='dev' 
@@ -39,6 +37,8 @@ RUN npm run build
 FROM python:3.13-alpine
 ARG FLASK_PORT=8080
 
+ARG LOCUTUS_COMMIT="1e7b3ba17106ad34a4061429747b2c78b6993ffa"
+ENV LOCUTUS_COMMIT=${LOCUTUS_COMMIT}
 
 
 RUN apk update && apk add --no-cache git
@@ -46,10 +46,10 @@ RUN apk update && apk add --no-cache git
 WORKDIR /app
 
 RUN echo git clone https://github.com/NIH-NCPI/locutus . && \
-  echo git checkout $LOCUTUS_COMMIT 
+  echo git checkout $LOCUTUS_COMMIT
 
 RUN git clone https://github.com/NIH-NCPI/locutus . && \
-  git checkout $LOCUTUS_COMMIT 
+  git checkout $LOCUTUS_COMMIT
 
 COPY --from=build /app/dist ./src/locutus/static
 
