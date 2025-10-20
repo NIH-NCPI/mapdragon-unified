@@ -36,7 +36,7 @@ jobs:
       (github.event.pull_request.base.ref == 'release')
     
     environment:
-      name: qa
+      name: uat
 
     permissions:
       contents: read
