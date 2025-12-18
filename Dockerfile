@@ -64,7 +64,7 @@ ENV UNICORN_HOST=0.0.0.0:$FLASK_PORT
 EXPOSE $FLASK_PORT 
 
 # Required for AWS connections
-RUN wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+RUN wget -P / https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
 CMD ["gunicorn", "-b", ":8080", "src.locutus.app:create_app()"] 
 # CMD ["flask", "run"]
 
