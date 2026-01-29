@@ -37,6 +37,7 @@ RUN npm run build
 FROM python:3.13-alpine
 ARG FLASK_PORT=8080
 
+# Edit the following line with the appropriate commit to capture latest backend changes
 ARG LOCUTUS_COMMIT="537b7a953fc8c7aeb100bc18bc017ea0cce45679"
 ENV LOCUTUS_COMMIT=${LOCUTUS_COMMIT}
 
