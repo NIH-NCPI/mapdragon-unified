@@ -37,8 +37,7 @@ RUN npm run build
 FROM python:3.13-alpine
 ARG FLASK_PORT=8080
 
-# Edit the following line with the appropriate commit to capture latest backend changes
-ARG LOCUTUS_COMMIT="537b7a953fc8c7aeb100bc18bc017ea0cce45679"
+ARG LOCUTUS_COMMIT="26f5d7e74499dec5da6699f3b8847df96d1b29ff"
 ENV LOCUTUS_COMMIT=${LOCUTUS_COMMIT}
 
 
@@ -66,5 +65,5 @@ EXPOSE $FLASK_PORT
 
 # Required for AWS connections
 RUN wget -P / https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
-CMD ["gunicorn", "-b", ":8080", "src.locutus.app:create_app()"]
+CMD ["gunicorn", "-b", ":8080", "--timeout", "120", "src.locutus.app:create_app()"]
 # CMD ["flask", "run"]
