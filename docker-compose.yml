@@ -13,9 +13,16 @@
 #   set MONGO_URI in .env, then
 #   docker compose up --build --no-deps app
 #
+# Seed the database (institutions, admin emails, terminologies) from
+# ./config.yaml using locutils:
+#   docker compose run --rm seed             # bundled mongo service
+#   docker compose run --rm --no-deps seed   # remote MONGO_URI from .env
+#
 # See README.md ("Local testing with Docker Compose") for details.
 
 name: mapdragon-unified
+
+x-mongo-uri: &mongo-uri ${MONGO_URI:-mongodb://${MONGO_ROOT_USER:-locutus}:${MONGO_ROOT_PASSWORD:-locutus}@mongo:27017/${MONGO_DB_NAME:-locutus}?authSource=admin}
 
 services:
   app:
@@ -42,8 +49,11 @@ services:
       LOCUTUS_DB_TYPE: mongodb
       # Defaults to the bundled mongo service. Override in .env to point at a
       # remote database.
-      MONGO_URI: ${MONGO_URI:-mongodb://${MONGO_ROOT_USER:-locutus}:${MONGO_ROOT_PASSWORD:-locutus}@mongo:27017/${MONGO_DB_NAME:-locutus}?authSource=admin}
+      MONGO_URI: *mongo-uri
       UMLS_API_KEY: ${UMLS_API_KEY:?Set UMLS_API_KEY in .env (see .env.example)}
+      # Back end verifies Google sign-in tokens against the same OAuth client
+      # the front end is built with.
+      GOOGLE_CLIENT_ID: ${VITE_CLIENT_ID}
       VERSION: ${VERSION:-local}
       LOCUTUS_LOGLEVEL: ${LOCUTUS_LOGLEVEL:-INFO}
     depends_on:
@@ -57,6 +67,31 @@ services:
       retries: 5
       # Startup downloads an ontology lookup CSV before serving requests.
       start_period: 60s
+
+  # One-shot job that seeds the database from ./config.yaml. It sits behind
+  # the "seed" profile so a plain `docker compose up` doesn't rerun it; use
+  # `docker compose run --rm seed` (see top of file).
+  seed:
+    profiles: ["seed"]
+    # Full (non-slim) image so git is available for the git+https installs.
+    image: ghcr.io/astral-sh/uv:python3.13-bookworm
+    working_dir: /work
+    environment:
+      MONGO_URI: *mongo-uri
+      UV_CACHE_DIR: /uv-cache
+    volumes:
+      - ./config.yaml:/work/config.yaml:ro
+      - uv-cache:/uv-cache
+    command:
+      - sh
+      - -c
+      - >-
+        uvx --from git+https://github.com/carrollaboratory/locutus-utils
+        locutils --config ./config.yaml --institutions -a seed -o include
+        -db "$$MONGO_URI"
+    depends_on:
+      mongo:
+        condition: service_healthy
 
   mongo:
     # Pinned major version; Firestore Mongo-compat and DocumentDB both
@@ -82,3 +117,4 @@ services:
 
 volumes:
   mongo-data:
+  uv-cache:
