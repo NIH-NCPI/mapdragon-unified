@@ -11,10 +11,10 @@ on:
         required: true
         type: string
         default: 'dev'
-      md_version: 
+      md_version:
         description: 'Optional version for the version of MD being deployed'
-        required: false 
-        type: string 
+        required: false
+        type: string
         default: ''
       backend_version:
         description: 'Optional version for the deployment (leaving this blank should use the github tag)'
@@ -35,9 +35,9 @@ env:
   GCP_CREDENTIALS:  ${{ secrets.GCP_CREDENTIALS }}
   UMLS_API_KEY: ${{ secrets.UMLS_API_KEY }}
   DOCKER_TAG: "${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GCP_SERVICE }}/${{ vars.IMAGE_NAME }}:${{ github.sha }}"
-
+  GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
 jobs:
-  
+
   deploy:
     runs-on: 'ubuntu-latest'
 
@@ -53,10 +53,10 @@ jobs:
         uses: 'actions/checkout@v4'
         with:
           ref: ${{ github.event.inputs.deploy_branch }} # This branch is deployed
-      
+
       - name: "Deploying ${{ github.event.inputs.deploy_branch }} to ${{ github.event.inputs.environment }}"
         run: echo "Deploying ${{ github.event.inputs.deploy_branch }} to ${{ github.event.inputs.environment }}"
-        
+
       - id: 'auth'
         name: 'Authenticate to Google Cloud'
         uses: 'google-github-actions/auth@v2'
@@ -71,7 +71,7 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-      
+
       - name: 'Set Version'
         run: |
           VERSION="${{ github.event.inputs.backend_version }}"
@@ -80,7 +80,7 @@ jobs:
 
       - name: 'Build Docker Image'
         run: |-
-          echo "DOCKER_TAG=${{ env.DOCKER_TAG }}" >> $GITHUB_ENV 
+          echo "DOCKER_TAG=${{ env.DOCKER_TAG }}" >> $GITHUB_ENV
 
           # docker build -t "${env.DOCKER_TAG}" --build-arg ENV=${{ github.event.inputs.environment }} .
           docker build -t "${{ env.DOCKER_TAG }}" --build-arg VITE_CLIENT_ID=${{ env.VITE_CLIENT_ID }} --build-arg VITE_MAPDRAGON_VERSION=${{ github.event.inputs.md_version }} .
@@ -95,4 +95,4 @@ jobs:
           service: ${{ env.SERVICE }}
           region: '${{ env.REGION }}'
           image: ${{ env.DOCKER_TAG }}
-          env_vars: VERSION=${{ env.VERSION }}, UMLS_API_KEY=${{ env.UMLS_API_KEY }}, MONGO_URI=${{ secrets.MONGO_URI }}
+          env_vars: VERSION=${{ env.VERSION }}, UMLS_API_KEY=${{ env.UMLS_API_KEY }}, MONGO_URI=${{ secrets.MONGO_URI }}, GOOGLE_CLIENT_ID=${{ env.GOOGLE_CLIENT_ID }}

@@ -14,10 +14,10 @@ on:
         required: false
         type: string
         default: ''
-      md_version: 
+      md_version:
         description: 'Optional front end version for the version of MD being deployed'
-        required: false 
-        type: string 
+        required: false
+        type: string
         default: ''
 env:
   VITE_CLIENT_ID: ${{ vars.VITE_CLIENT_ID }}
@@ -29,13 +29,14 @@ env:
   IMAGE_TAG: "${{ vars.IMAGE_NAME }}:${{ github.sha }}"
   IMAGE_NAME: ${{ vars.IMAGE_NAME }}
   GHCRIO_ORG: 'carrollaboratory'
+  GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
 jobs:
-  
+
   deploy:
     runs-on: 'ubuntu-latest'
 
     if: |
-      github.event_name == 'workflow_dispatch'     
+      github.event_name == 'workflow_dispatch'
     environment:
       # Let's use the settings for alpha even thought we won't be pushing it up
       name: alpha
@@ -67,7 +68,7 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-      
+
       - name: Set Version
         id: set_version
         run: |
@@ -78,10 +79,10 @@ jobs:
           fi
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
           echo "Set Version: ${VERSION}"
-  
+
       - name: 'Build and Container'
         run: |
-          echo "DOCKER_TAG=$DOCKER_TAG" >> $GITHUB_ENV 
+          echo "DOCKER_TAG=$DOCKER_TAG" >> $GITHUB_ENV
           docker build --tag "$IMAGE_TAG" \
               --build-arg VITE_CLIENT_ID=${{ env.VITE_CLIENT_ID }} \
               --build-arg VITE_MAPDRAGON_VERSION=${{ github.event.inputs.md_version }} \
@@ -96,4 +97,3 @@ jobs:
 
           docker tag "${IMAGE_TAG}" "${GHCR_TAG}"
           docker push "${GHCR_TAG}"
-      
