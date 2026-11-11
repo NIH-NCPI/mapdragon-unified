@@ -1,6 +1,7 @@
 loc.env
 .env
 mapdragon-unified-creds.json
+config.yaml
 
 # Database dumps hold real user emails and admin lists. Never commit them.
 backups/

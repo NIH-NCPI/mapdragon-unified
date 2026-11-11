@@ -24,7 +24,7 @@
 #   docker compose run --rm locutils load -i backups/local.locutus.json.gz --replace
 #   docker compose run --rm locutils-remote dump -o backups/dev.locutus.json.gz
 # The justfile wraps these (just db-dump, db-dump-remote, db-load) and can
-# start the stack from a dump (TEST_DUMP in .env).
+# start the stack from a dump (just test-dump).
 #
 # See README.md ("Local testing with Docker Compose") for details.
 

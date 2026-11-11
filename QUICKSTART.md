@@ -39,15 +39,19 @@ commands using **just** without specifying a recipe:
 ```shell
 $ just
 Available recipes:
-    check-pins  # Show the pinned commits and refuse to build if anything overrides them
+    check-pins                   # Show the pinned commits and refuse to build if anything overrides them
+    db-dump file=""              # Dump the local mongo service to backups/ (default: timestamped name)
+    db-dump-remote file="" *args # Dump SOURCE_MONGO_URI (or MONGO_URI) from .env to backups/; extra args go to locutils dump
+    db-load file                 # Load a dump into the local mongo service, replacing what's there
     default
-    down        # Stop everything (keeps the local database)
-    logs        # Follow the app logs
-    reset       # Stop everything and wipe the local database for a clean test
-    seed        # Seed the local mongo from config.yaml (institutions, admins, terminologies)
-    seed-remote # Seed the remote database given by MONGO_URI in .env
-    test        # Build from the Dockerfile pins, start everything, and seed the local DB
-    up          # Build the image from the Dockerfile pins and start app + mongo
+    down                         # Stop everything (keeps the local database)
+    logs                         # Follow the app logs
+    reset                        # Stop everything and wipe the local database for a clean test
+    seed                         # Seed the local mongo from config.yaml (institutions, admins, terminologies)
+    seed-remote                  # Seed the remote database given by MONGO_URI in .env
+    test                         # Build from the Dockerfile pins, start everything, and seed the local DB
+    test-dump file=""            # Like test, but wipes the local DB and starts from a dump (file, else TEST_DUMP in .env)
+    up                           # Build the image from the Dockerfile pins and start app + mongo
 ```
 
 ## Testing out the image
@@ -80,3 +84,62 @@ Finally, if you want to clean your database, you can do so using **just reset**.
 ```shell
 just reset
 ```
+
+## Testing with a copy of real data
+
+**just test** starts from an empty database with only the seed data. To check
+your changes against real studies and mappings, you can start from a dump of an
+existing database instead.
+
+Dumps contain real user emails and the admin list. Keep them in the
+`backups/` folder, which git ignores, and never check them in or share them
+with anyone who doesn't already have access to that data.
+
+### Getting a dump
+
+Pull one down from the database you work with. Set `SOURCE_MONGO_URI` in your
+.env to that database's URI (the Firestore and DocumentDB examples for
+`MONGO_URI` in .env.example work here too), then:
+
+```shell
+just db-dump-remote dev.locutus.json.gz
+```
+
+This writes `backups/dev.locutus.json.gz`. Without a file name, you get a
+timestamped one. You only need to do this when you want fresher data. A dump
+someone hands you works just as well; drop it into `backups/`.
+
+### Starting from the dump
+
+```shell
+just test-dump backups/dev.locutus.json.gz
+```
+
+If you use the same dump every time, set `TEST_DUMP=backups/dev.locutus.json.gz`
+in your .env and simply run:
+
+```shell
+just test-dump
+```
+
+Each run builds the image from the Dockerfile pins, **wipes the local
+database**, loads the dump, starts the app, and then seeds only the
+institutions and admin emails from your config.yaml so you can sign in and
+administer. Terminologies and everything else come from the dump. Every run
+starts from exactly the same data.
+
+A few things to know:
+
+- Leave `MONGO_URI` unset in your .env. The dump only ever loads into the local
+  database, and `just test-dump` stops if the app is pointed somewhere else.
+- Everyone has to sign in again after a load. Login sessions aren't copied.
+- **just test** still works as before and doesn't use the dump, though it
+  doesn't wipe the database either. Use **just reset** first if you want an
+  empty one.
+
+### Other dump recipes
+
+- `just db-dump [file]` saves your local database to `backups/`, e.g. before
+  trying something destructive.
+- `just db-load <file>` loads a dump into your local database, replacing what's
+  there, without rebuilding anything.
