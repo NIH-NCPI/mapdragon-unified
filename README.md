@@ -59,3 +59,13 @@ docker compose up --build --no-deps app
 **Reset the local database:** `docker compose down -v`
 
 Note: a fresh local database has no terminologies loaded. See "DB Provisioning" above.
+
+**Testing with a copy of real data:** pull a dump of the database you work with into `backups/` (git-ignored), then point `TEST_DUMP` at it in `.env`:
+
+```bash
+just db-dump-remote dev.locutus.json.gz   # dumps SOURCE_MONGO_URI (or MONGO_URI) from .env
+# .env: TEST_DUMP=backups/dev.locutus.json.gz
+just test
+```
+
+With `TEST_DUMP` set, every `just test` wipes the local database, loads the dump and then seeds only the institutions and admin emails from `config.yaml`, so you can sign in. Dumps hold real user emails and the admin list: keep them in `backups/` and never commit them. `just db-dump` and `just db-load <file>` copy the local database to and from a file. See the [locutils docs](https://github.com/carrollaboratory/locutus-utils) for `locutils dump` / `locutils load`.

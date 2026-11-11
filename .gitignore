@@ -1,3 +1,7 @@
 loc.env
 .env
 mapdragon-unified-creds.json
+
+# Database dumps hold real user emails and admin lists. Never commit them.
+backups/
+*.locutus.json*
