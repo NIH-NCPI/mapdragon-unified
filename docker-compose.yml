@@ -18,11 +18,59 @@
 #   docker compose run --rm seed             # bundled mongo service
 #   docker compose run --rm --no-deps seed   # remote MONGO_URI from .env
 #
+# Copy a database to a file and back (dumps land in ./backups, which is
+# git-ignored because dumps hold real user emails):
+#   docker compose run --rm locutils dump -o backups/local.locutus.json.gz
+#   docker compose run --rm locutils load -i backups/local.locutus.json.gz --replace
+#   docker compose run --rm locutils-remote dump -o backups/dev.locutus.json.gz
+# The justfile wraps these (just db-dump, db-dump-remote, db-load) and can
+# start the stack from a dump (just test-dump).
+#
 # See README.md ("Local testing with Docker Compose") for details.
 
 name: mapdragon-unified
 
 x-mongo-uri: &mongo-uri ${MONGO_URI:-mongodb://${MONGO_ROOT_USER:-locutus}:${MONGO_ROOT_PASSWORD:-locutus}@mongo:27017/${MONGO_DB_NAME:-locutus}?authSource=admin}
+
+# The bundled mongo service, regardless of MONGO_URI.
+x-local-mongo-uri: &local-mongo-uri mongodb://${MONGO_ROOT_USER:-locutus}:${MONGO_ROOT_PASSWORD:-locutus}@mongo:27017/${MONGO_DB_NAME:-locutus}?authSource=admin
+
+# Where uvx installs locutils from. Point it at a branch to try unreleased
+# changes, e.g. git+https://github.com/carrollaboratory/locutus-utils@my-branch
+x-locutils-spec: &locutils-spec ${LOCUTILS_SPEC:-git+https://github.com/carrollaboratory/locutus-utils}
+
+# Shared by the locutils services: runs `locutils <args>` and hands any
+# dumps it wrote back to the host user (HOST_UID/HOST_GID, set by the
+# justfile) so they aren't left owned by root.
+x-locutils: &locutils
+  profiles: ["tools"]
+  # Full (non-slim) image so git is available for the git+https installs.
+  image: ghcr.io/astral-sh/uv:python3.13-bookworm
+  working_dir: /work
+  volumes:
+    - ./config.yaml:/work/config.yaml:ro
+    - ./backups:/work/backups
+    - uv-cache:/uv-cache
+  entrypoint:
+    - sh
+    - -c
+    - |
+      if [ -z "$$MONGO_URI" ]; then
+        echo "error: no database URI. Set SOURCE_MONGO_URI (or MONGO_URI) in .env." >&2
+        exit 2
+      fi
+      # DocumentDB URIs reference the RDS CA bundle (see .env.example)
+      case "$$MONGO_URI" in
+        *global-bundle.pem*) [ -f /global-bundle.pem ] ||
+          curl -fsSL -o /global-bundle.pem https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem ;;
+      esac
+      uvx --from "$$LOCUTILS_SPEC" locutils "$$@"
+      status=$$?
+      if [ -n "$$HOST_UID" ] && [ -d backups ]; then
+        chown -R "$$HOST_UID:$${HOST_GID:-$$HOST_UID}" backups
+      fi
+      exit $$status
+    - locutils
 
 services:
   app:
@@ -78,6 +126,7 @@ services:
     working_dir: /work
     environment:
       MONGO_URI: *mongo-uri
+      LOCUTILS_SPEC: *locutils-spec
       UV_CACHE_DIR: /uv-cache
     volumes:
       - ./config.yaml:/work/config.yaml:ro
@@ -86,12 +135,39 @@ services:
       - sh
       - -c
       - >-
-        uvx --from git+https://github.com/carrollaboratory/locutus-utils
+        uvx --from "$$LOCUTILS_SPEC"
         locutils --config ./config.yaml --institutions -a seed -o include
         -db "$$MONGO_URI"
     depends_on:
       mongo:
         condition: service_healthy
+
+  # locutils against the bundled mongo service (dump, load, seed with
+  # custom flags). Arguments go straight to locutils.
+  locutils:
+    <<: *locutils
+    environment:
+      MONGO_URI: *local-mongo-uri
+      LOCUTILS_SPEC: *locutils-spec
+      UV_CACHE_DIR: /uv-cache
+      HOST_UID: ${HOST_UID:-}
+      HOST_GID: ${HOST_GID:-}
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  # locutils against a remote database: SOURCE_MONGO_URI, else MONGO_URI.
+  locutils-remote:
+    <<: *locutils
+    environment:
+      MONGO_URI: ${SOURCE_MONGO_URI:-${MONGO_URI:-}}
+      LOCUTILS_SPEC: *locutils-spec
+      UV_CACHE_DIR: /uv-cache
+      HOST_UID: ${HOST_UID:-}
+      HOST_GID: ${HOST_GID:-}
+    # For DocumentDB tunnels on Linux (host.docker.internal)
+    extra_hosts:
+      - host.docker.internal:host-gateway
 
   mongo:
     # Pinned major version; Firestore Mongo-compat and DocumentDB both
