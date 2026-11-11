@@ -31,3 +31,31 @@ mongodb://localhost:27017/locutus  (where locutus is the database we are using)
 
 # DB Provisioning
 For now, provisioning a new database simply requires loading a couple of core terminologies and some basic search configuration details. This can be run as a simple script. Once the database has those two terminologies, it should be ready for use. 
+
+# Local testing with Docker Compose
+`docker-compose.yml` builds the same `Dockerfile` used by the GCP and AWS deployments and runs it alongside a local MongoDB, so you can check that a front-end/back-end commit combination works before deploying.
+
+```bash
+cp .env.example .env          # set UMLS_API_KEY (required) and VITE_CLIENT_ID
+docker compose up --build
+```
+
+- App: http://localhost:8080 
+- API health/version: http://localhost:8080/api/version
+- Local MongoDB (for seeding/inspection): `mongodb://locutus:locutus@localhost:27017/locutus?authSource=admin`
+
+The `app` service has a healthcheck against `/api/version`. `docker compose ps` shows `healthy` once it's serving.
+
+**Testing other commits:** set `MAPDRAGON_COMMIT`, `VITE_MAPDRAGON_VERSION`, and/or `LOCUTUS_COMMIT` in `.env` (or the shell) and rebuild. If they're unset, the commits pinned in the `Dockerfile` are used.
+
+**Testing against a cloud database:** set `MONGO_URI` in `.env` (see `.env.example` for Firestore and DocumentDB examples) and start only the app:
+
+```bash
+docker compose up --build --no-deps app
+```
+
+**Platform:** images are built for `linux/amd64` by default to match Cloud Run and AWS. On Apple Silicon this runs under emulation and is slow. Set `DOCKER_PLATFORM=linux/arm64` for faster local builds.
+
+**Reset the local database:** `docker compose down -v`
+
+Note: a fresh local database has no terminologies loaded. See "DB Provisioning" above.
