@@ -24,15 +24,16 @@ env:
   IMAGE_TAG: "${{ vars.IMAGE_NAME }}:${{ github.sha }}"
   IMAGE_NAME: ${{ vars.IMAGE_NAME }}
   GHCRIO_ORG: 'carrollaboratory'
+  GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
 jobs:
-  
+
   deploy:
     runs-on: 'ubuntu-latest'
 
     if: |
-      github.event_name == 'workflow_dispatch' || 
+      github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request_review' && github.event.review.state == 'approved' && github.event.pull_request.base.ref == 'main')
-    
+
     environment:
       name: dev
 
@@ -69,7 +70,7 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-      
+
       - name: Set Version
         id: set_version
         run: |
@@ -80,10 +81,10 @@ jobs:
           fi
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
           echo "Set Version: ${VERSION}"
-  
+
       - name: 'Build and Push Container'
         run: |
-          echo "DOCKER_TAG=$DOCKER_TAG" >> $GITHUB_ENV 
+          echo "DOCKER_TAG=$DOCKER_TAG" >> $GITHUB_ENV
           docker build --tag "$IMAGE_TAG" \
               --build-arg VITE_CLIENT_ID=${{ env.VITE_CLIENT_ID }} \
               .
@@ -99,11 +100,11 @@ jobs:
           service: '${{ env.SERVICE }}'
           region: '${{ env.REGION }}'
           image: "${{ env.DOCKER_TAG }}"
-          env_vars: VERSION=${{ env.VERSION }}, UMLS_API_KEY=${{ env.UMLS_API_KEY }}, MONGO_URI=${{ secrets.MONGO_URI }}
+          env_vars: VERSION=${{ env.VERSION }}, UMLS_API_KEY=${{ env.UMLS_API_KEY }}, MONGO_URI=${{ secrets.MONGO_URI }}, GOOGLE_CLIENT_ID=${{ env.GOOGLE_CLIENT_ID }}
 
       # I don't think this belongs in DEV, but I'm leaving it here for the time being until we've had a chance
       # to discuss a complete strategy for all things related to these deployment automations
-      
+
       #- name: Log in to GitHub Container Registry
       #  run: echo "${{ secrets.GHRCIO_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
@@ -113,4 +114,3 @@ jobs:
 
       #    docker tag "${IMAGE_TAG}" "${GHCR_TAG}"
       #    docker push "${GHCR_TAG}"
-      
