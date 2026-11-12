@@ -82,6 +82,11 @@ db-dump-remote file="" *args:
 db-load file:
     {{locutils_run}} locutils load -i "{{file}}" --replace
 
+# Open mongosh on the local mongo service; extra args go to mongosh (e.g. --eval '...')
+[positional-arguments]
+mongosh *args:
+    @docker compose exec mongo sh -c 'exec mongosh -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin "$MONGO_INITDB_DATABASE" "$@"' mongosh "$@"
+
 # Follow the app logs
 logs:
     docker compose logs -f app

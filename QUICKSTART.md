@@ -46,6 +46,7 @@ Available recipes:
     default
     down                         # Stop everything (keeps the local database)
     logs                         # Follow the app logs
+    mongosh *args                # Open mongosh on the local mongo service; extra args go to mongosh (e.g. --eval '...')
     reset                        # Stop everything and wipe the local database for a clean test
     seed                         # Seed the local mongo from config.yaml (institutions, admins, terminologies)
     seed-remote                  # Seed the remote database given by MONGO_URI in .env
@@ -143,3 +144,5 @@ A few things to know:
   trying something destructive.
 - `just db-load <file>` loads a dump into your local database, replacing what's
   there, without rebuilding anything.
+- `just mongosh` opens a shell on your local database to look around, e.g.
+  `just mongosh --eval 'db.User.countDocuments()'`.
