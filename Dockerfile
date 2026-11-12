@@ -7,7 +7,7 @@ FROM node:18-alpine AS build
 # release. I'm setting these as ENVs so that they can exist outside of
 # any particular build. The Map Dragon version must be provided here as
 # well so that it gets baked into the build.
-ARG MAPDRAGON_COMMIT="9626db6e93495a1bebeda923a953938c9bdc7b68"
+ARG MAPDRAGON_COMMIT="f9c892c830b0411390dd010537705afe7a0f155e"
 ARG VITE_MAPDRAGON_VERSION="v2.3.3"
 
 ARG VITE_CLIENT_ID
@@ -38,7 +38,7 @@ FROM python:3.13-alpine
 ARG FLASK_PORT=8080
 
 # V2.2.11
-ARG LOCUTUS_COMMIT="fbf46f931e134a4709893d5f4e8fe07789eb6f92"
+ARG LOCUTUS_COMMIT="cfc17cf9b9faf59b279f187fbd5654a50abed99f"
 ENV LOCUTUS_COMMIT=${LOCUTUS_COMMIT}
 
 
