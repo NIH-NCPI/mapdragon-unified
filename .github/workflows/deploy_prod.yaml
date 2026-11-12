@@ -31,7 +31,7 @@ env:
   IMAGE_TAG: "${{ vars.IMAGE_NAME }}:${{ github.sha }}"
   IMAGE_NAME: ${{ vars.IMAGE_NAME }}
   GHCRIO_ORG: 'carrollaboratory'
-  GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+  GOOGLE_CLIENT_ID: ${{ vars.VITE_CLIENT_ID }}
 jobs:
 
   deploy:
