@@ -1,0 +1,124 @@
+# Shared by Dev Deploy, UAT Deploy and Prod Deploy: builds the image from the
+# commit being deployed (Dockerfile pins decide the Map Dragon and Locutus
+# versions), pushes it to Artifact Registry and deploys it to Cloud Run.
+# Each GitHub environment (dev, uat, alpha) holds its own GCP project, service,
+# OAuth client and database. See DEPLOYING.md.
+
+name: 'Cloud Run Deploy'
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'GitHub environment with the vars and secrets to deploy with'
+        required: true
+        type: string
+      deploy_env:
+        description: 'Label appended to the front-end version (dev, uat, prod)'
+        required: true
+        type: string
+      release_only:
+        description: 'Refuse to deploy anything but a release tag'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  deploy:
+    runs-on: 'ubuntu-latest'
+
+    environment:
+      name: ${{ inputs.environment }}
+
+    # Deploys to the same environment queue up instead of racing.
+    concurrency:
+      group: cloud-run-${{ inputs.environment }}
+      cancel-in-progress: false
+
+    permissions:
+      contents: read
+      id-token: write
+
+    env:
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ vars.GCP_REGION }}
+      GCP_SERVICE: ${{ vars.GCP_SERVICE }}
+      IMAGE_NAME: ${{ vars.IMAGE_NAME }}
+      VITE_CLIENT_ID: ${{ vars.VITE_CLIENT_ID }}
+
+    steps:
+      - name: 'Check what is being deployed'
+        if: inputs.release_only
+        run: |
+          if [ "$GITHUB_REF_TYPE" != "tag" ]; then
+            echo "::error::${{ inputs.environment }} only takes release tags. Pick a tag under 'Use workflow from', not the branch $GITHUB_REF_NAME."
+            exit 1
+          fi
+
+      - name: 'Check settings'
+        env:
+          GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          UMLS_API_KEY: ${{ secrets.UMLS_API_KEY }}
+        run: |
+          missing=""
+          for v in GCP_PROJECT_ID GCP_REGION GCP_SERVICE IMAGE_NAME VITE_CLIENT_ID GCP_CREDENTIALS MONGO_URI UMLS_API_KEY; do
+            [ -n "${!v}" ] || missing="$missing $v"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Not set for the ${{ inputs.environment }} environment (or the repository):$missing"
+            exit 1
+          fi
+
+      - name: 'Checkout'
+        uses: 'actions/checkout@v4'
+        with:
+          fetch-depth: 0 # tags, for the image version
+
+      - name: 'Image version'
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            version="$GITHUB_REF_NAME"
+          else
+            version="$(git describe --tags --always)"
+          fi
+          echo "Deploying $version to ${{ inputs.environment }}"
+          echo "DOCKER_TAG=$GCP_REGION-docker.pkg.dev/$GCP_PROJECT_ID/$GCP_SERVICE/$IMAGE_NAME:$version" >> "$GITHUB_ENV"
+
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: 'Docker Auth'
+        run: gcloud auth configure-docker "$GCP_REGION-docker.pkg.dev"
+
+      # Only the client ID and the environment label are passed in. The Map
+      # Dragon and Locutus versions come from the Dockerfile pins.
+      - name: 'Build Container'
+        run: |
+          docker build --tag "$DOCKER_TAG" \
+              --build-arg VITE_CLIENT_ID="$VITE_CLIENT_ID" \
+              --build-arg DEPLOY_ENV="${{ inputs.deploy_env }}" \
+              .
+
+      - name: 'Push Container to GCP'
+        run: docker push "$DOCKER_TAG"
+
+      # The service's environment is replaced with exactly this list, so a
+      # value changed by hand in the console doesn't silently outlive the
+      # next deploy. Change settings in the GitHub environment instead.
+      # VERSION is left unset so /api/version reports the Locutus release.
+      - name: 'Deploy to Cloud Run'
+        uses: 'google-github-actions/deploy-cloudrun@v2'
+        with:
+          service: ${{ env.GCP_SERVICE }}
+          region: ${{ env.GCP_REGION }}
+          image: ${{ env.DOCKER_TAG }}
+          env_vars_update_strategy: overwrite
+          env_vars: |-
+            UMLS_API_KEY=${{ secrets.UMLS_API_KEY }}
+            MONGO_URI=${{ secrets.MONGO_URI }}
+            GOOGLE_CLIENT_ID=${{ vars.VITE_CLIENT_ID }}
+            LOCUTUS_LOGLEVEL=${{ vars.LOCUTUS_LOGLEVEL || 'INFO' }}
