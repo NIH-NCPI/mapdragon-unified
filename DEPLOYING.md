@@ -113,9 +113,6 @@ GCP project, which is funded by the other grant. To make it work:
   origins.
 - The AWS deployment has to set `GOOGLE_CLIENT_ID` to the same ID.
 
-If the AWS side should own its own OAuth client, give Package Container its own
-GitHub environment holding that client's `VITE_CLIENT_ID`.
-
 ## One-time GitHub setup
 
 These live in the repository settings, not in the workflows:
