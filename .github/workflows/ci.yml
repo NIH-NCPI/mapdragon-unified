@@ -1,0 +1,38 @@
+# Builds the image for every PR into main and checks that it starts against a
+# local mongo and serves both the API and the front end. Nothing is deployed
+# and no secrets are used.
+
+name: 'CI'
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  smoke-test:
+    runs-on: 'ubuntu-latest'
+
+    steps:
+      - name: 'Checkout'
+        uses: 'actions/checkout@v4'
+
+      - name: 'Build and start the app with a local mongo'
+        env:
+          # Required by docker-compose.yml; startup doesn't call UMLS.
+          UMLS_API_KEY: ci-placeholder
+        run: docker compose up -d --build --wait app
+
+      - name: 'Check the API and front end respond'
+        run: |
+          curl -fsS http://localhost:8080/api/version
+          echo
+          curl -fsS http://localhost:8080/ | grep -qi '<html'
+
+      - name: 'App logs'
+        if: failure()
+        run: docker compose logs app
+
+      - name: 'Stop'
+        if: always()
+        run: docker compose down -v

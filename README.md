@@ -10,13 +10,18 @@ The final image will be based on the following repositories:
 - **Locutus**:
   [https://github.com/NIH-NCPI/locutus.git](https://github.com/NIH-NCPI/locutus.git)
 
+GitHub Actions builds and deploys the image: CI on pull requests, dev on merge
+to `main`, UAT on a release tag, and prod and the AWS package by hand. See
+[DEPLOYING.md](DEPLOYING.md) for the flow, how to make a release, and the
+settings each deployment needs.
+
 ## Environment Variables Required to Build Container
 
 When building the image itself, there are a handful of environment variables
 you'll need to provide:
 
 - VITE_CLIENT_ID - The ouath2 client ID to be used to authenticate users.
-- FLASK_ENV (OPTIONAL) - This will be appended to the front-end version
+- DEPLOY_ENV (OPTIONAL) - This will be appended to the front-end version
 - VITE_MAPDRAGON_VERSION (OPTIONAL) - If you want to provide a specific version
   for the front end
 
@@ -32,6 +37,8 @@ you'll need to provide:
 - UMLS_API_KEY - This is required and is an API token generated for UMLS access
 - MONGO_URI - This is required and contains the necessary credentials necessary
   for connecting to the MongoDB database.
+- GOOGLE_CLIENT_ID - This is required for sign-in and must be the same OAuth
+  client ID the image was built with (VITE_CLIENT_ID).
 
 For now, the container should always listen on port 8080.
 
