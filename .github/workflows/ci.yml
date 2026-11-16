@@ -20,7 +20,7 @@ jobs:
       - name: 'Build and start the app with a local mongo'
         env:
           # Required by docker-compose.yml; startup doesn't call UMLS.
-          UMLS_API_KEY: ci-placeholder
+          UMLS_API_KEY: ${{ secrets.UMLS_API_KEY }}
           VITE_CLIENT_ID: ${{ vars.VITE_CLIENT_ID }}
         run: docker compose up -d --build --wait app
 
