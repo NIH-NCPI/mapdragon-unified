@@ -1,7 +1,7 @@
 # Stage 1: Build the React app
 
 # FROM node:latest as build
-FROM node:18-alpine AS build
+FROM node:22-alpine AS build
 
 # We will need to update these commits each time we want to publish a new
 # release. I'm setting these as ENVs so that they can exist outside of
